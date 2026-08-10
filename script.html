@@ -1,0 +1,4483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Live Chat</title>
+
+<style>
+*{box-sizing:border-box}
+
+:root{
+    --bg:#f4f5f7;
+    --panel:#fff;
+    --text:#222;
+    --muted:#777;
+    --border:#ddd;
+    --accent:#f0a900;
+    --header:#fff;
+    --chat:#fafafa;
+}
+
+body{
+    margin:0;
+    font-family:Arial,Helvetica,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    font-size:12px;
+}
+
+body.dark{
+    --bg:#15181c;
+    --panel:#20252b;
+    --text:#eee;
+    --muted:#aaa;
+    --border:#3b4148;
+    --header:#20252b;
+    --chat:#181b1f;
+}
+
+body.cyan{
+    --bg:#eafcff;
+    --panel:#fff;
+    --text:#17343a;
+    --muted:#668188;
+    --border:#bde4ea;
+    --accent:#00aabd;
+    --header:#fff;
+    --chat:#f2fdff;
+}
+
+body.facebook{
+    --bg:#f0f2f5;
+    --panel:#fff;
+    --text:#1c1e21;
+    --muted:#65676b;
+    --border:#dddfe2;
+    --accent:#1877f2;
+    --header:#fff;
+    --chat:#f0f2f5;
+}
+
+button,input,textarea,select{font-family:inherit}
+button{cursor:pointer}
+
+.app{
+    display:flex;
+    height:100vh;
+    overflow:hidden;
+}
+
+/* SIDEBAR */
+
+.sidebar{
+    width:70px;
+    background:#20252b;
+    color:#fff;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding-top:12px;
+}
+
+.logo{margin-bottom:5px}
+
+.logo-circle{
+    width:34px;
+    height:34px;
+    border-radius:50%;
+    background:var(--accent);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:19px;
+    overflow:hidden;
+}
+
+.logo-circle img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
+
+.online{
+    font-size:9px;
+    color:#aaa;
+    margin-bottom:15px;
+}
+
+.side-item{
+    width:62px;
+    min-height:52px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    color:#aeb4ba;
+    border-radius:5px;
+    margin-bottom:3px;
+}
+
+.side-item:hover,
+.side-item.active{
+    background:#30363d;
+    color:#fff;
+}
+
+.side-icon{
+    font-size:17px;
+    margin-bottom:3px;
+}
+
+.side-label{font-size:8px}
+
+.side-bottom{
+    margin-top:auto;
+    padding-bottom:10px;
+}
+
+/* CHAT LIST */
+
+.chat-list-panel{
+    width:260px;
+    background:var(--panel);
+    border-right:1px solid var(--border);
+    display:flex;
+    flex-direction:column;
+    color:var(--text);
+}
+
+.list-tabs{
+    display:flex;
+    border-bottom:1px solid var(--border);
+}
+
+.list-tab{
+    flex:1;
+    border:0;
+    background:transparent;
+    padding:13px 5px;
+    font-size:10px;
+    color:var(--muted);
+}
+
+.list-tab.active{
+    color:var(--text);
+    border-bottom:2px solid var(--accent);
+    font-weight:bold;
+}
+
+.chat-list-view{
+    flex:1;
+    overflow-y:auto;
+}
+
+.no-chat{
+    text-align:center;
+    color:#999;
+    padding:35px 15px;
+    line-height:18px;
+}
+
+.chat-list-item{
+    padding:10px;
+    border-bottom:1px solid var(--border);
+    cursor:pointer;
+}
+
+.chat-list-item:hover{background:rgba(128,128,128,.08)}
+.chat-list-item.selected{background:#fff7df}
+
+.chat-list-title{
+    font-weight:bold;
+    font-size:11px;
+    margin-bottom:4px;
+}
+
+.chat-list-preview{
+    color:var(--muted);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+.chat-list-time{
+    color:#aaa;
+    font-size:9px;
+    margin-top:4px;
+}
+
+.chat-list-actions{
+    display:flex;
+    gap:5px;
+    margin-top:7px;
+}
+
+.chat-list-actions button,
+.ended-bottom button{
+    border:1px solid var(--border);
+    background:var(--panel);
+    color:var(--text);
+    border-radius:3px;
+    font-size:9px;
+    padding:4px 7px;
+}
+
+.chat-list-actions .delete-small{
+    color:#c00;
+}
+
+.ended-bottom{
+    padding:8px;
+    border-top:1px solid var(--border);
+    display:flex;
+    gap:5px;
+}
+
+.ended-bottom button{
+    flex:1;
+}
+
+.ended-bottom .delete-all{
+    color:#c00;
+}
+
+/* MAIN */
+
+.main-chat{
+    flex:1;
+    min-width:0;
+    display:flex;
+    flex-direction:column;
+    background:var(--panel);
+}
+
+.chat-header{
+    height:48px;
+    border-bottom:1px solid var(--border);
+    display:flex;
+    align-items:center;
+    padding:0 12px;
+    gap:8px;
+    color:var(--text);
+}
+
+.header-icon{font-size:15px}
+
+.header-title{
+    font-weight:bold;
+}
+
+.header-actions{
+    margin-left:auto;
+    display:flex;
+    gap:18px;
+}
+
+.transfer,.end{
+    cursor:pointer;
+    font-size:10px;
+}
+
+.transfer{color:#4d81c2}
+.end{color:#d13d3d}
+
+/* CHAT */
+
+.chat-body{
+    flex:1;
+    overflow-y:auto;
+    padding:18px;
+    background:var(--chat);
+}
+
+.empty-chat{
+    color:#aaa;
+    text-align:center;
+    padding-top:80px;
+    font-size:11px;
+}
+
+.message{
+    display:flex;
+    margin-bottom:12px;
+}
+
+.message.left{justify-content:flex-start}
+.message.right{justify-content:flex-end}
+
+.message-box{
+    max-width:72%;
+    padding:9px 11px;
+    border-radius:7px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    line-height:17px;
+    white-space:pre-wrap;
+    word-break:break-word;
+}
+
+.message.right .message-box{
+    background:#fff3cf;
+    border-color:#efd98e;
+}
+
+.avatar{
+    width:26px;
+    height:26px;
+    border-radius:50%;
+    background:#ddd;
+    margin-left:7px;
+    flex-shrink:0;
+}
+
+.message.left .avatar{
+    margin-left:0;
+    margin-right:7px;
+}
+
+.message-time{
+    display:block;
+    color:#999;
+    font-size:8px;
+    margin-top:5px;
+    text-align:right;
+}
+
+/* VISITOR */
+
+.visitor-simulator{
+    border-top:1px solid var(--border);
+    background:var(--panel);
+    padding:7px;
+    display:flex;
+    gap:6px;
+}
+
+.visitor-simulator input{
+    flex:1;
+    height:32px;
+    border:1px solid var(--border);
+    border-radius:4px;
+    padding:0 9px;
+    font-size:11px;
+    background:var(--panel);
+    color:var(--text);
+}
+
+.visitor-send{
+    border:0;
+    background:#343a40;
+    color:#fff;
+    border-radius:4px;
+    padding:0 12px;
+    font-size:10px;
+}
+
+/* EDITOR */
+
+.editor{
+    border-top:1px solid var(--border);
+    background:var(--panel);
+}
+
+.toolbar{
+    height:34px;
+    border-bottom:1px solid var(--border);
+    display:flex;
+    align-items:center;
+    padding:0 9px;
+    gap:11px;
+}
+
+.tool{
+    color:#777;
+    font-size:10px;
+}
+
+.saved-replies-toggle{
+    margin-left:auto;
+    border:0;
+    background:transparent;
+    color:#777;
+    font-size:10px;
+}
+
+.editor-area{padding:7px}
+
+.editor-area textarea{
+    width:100%;
+    height:80px;
+    resize:vertical;
+    border:0;
+    outline:0;
+    font-size:11px;
+    background:transparent;
+    color:var(--text);
+}
+
+.editor-footer{
+    display:flex;
+    justify-content:flex-end;
+    gap:6px;
+    padding:7px;
+    border-top:1px solid var(--border);
+}
+
+.editor-footer button{
+    border-radius:4px;
+    border:1px solid var(--border);
+    padding:7px 12px;
+    font-size:10px;
+    background:var(--panel);
+    color:var(--text);
+}
+
+.send{
+    background:var(--accent)!important;
+    border-color:var(--accent)!important;
+    color:#fff!important;
+}
+
+/* SCRIPT PANEL */
+
+.script-panel{
+    width:310px;
+    background:var(--panel);
+    border-left:1px solid var(--border);
+    overflow-y:auto;
+    color:var(--text);
+
+    transform:translateX(0);
+    opacity:1;
+    transition:
+        width .28s ease,
+        transform .28s ease,
+        opacity .2s ease;
+}
+
+.script-panel.closed{
+    width:0;
+    transform:translateX(100%);
+    opacity:0;
+    overflow:hidden;
+}
+
+.search{
+    padding:10px;
+    border-bottom:1px solid var(--border);
+}
+
+.search input{
+    width:100%;
+    height:31px;
+    border:1px solid var(--border);
+    border-radius:4px;
+    padding:0 9px;
+    font-size:10px;
+    background:var(--panel);
+    color:var(--text);
+}
+
+.category{
+    border-bottom:1px solid var(--border);
+}
+
+.category-title{
+    padding:10px;
+    font-weight:bold;
+    border-bottom:1px solid var(--border);
+    display:flex;
+    align-items:center;
+}
+
+.category-title-text{cursor:pointer}
+
+.add-btn{
+    margin-left:auto;
+    border:0;
+    background:var(--accent);
+    color:#fff;
+    padding:4px 7px;
+    border-radius:3px;
+    font-size:9px;
+}
+
+.personal-empty{
+    padding:12px;
+    color:#999;
+    font-size:10px;
+    line-height:16px;
+}
+
+.folder-title{
+    padding:9px 11px;
+    cursor:pointer;
+    border-bottom:1px solid var(--border);
+    font-weight:bold;
+    font-size:10px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.folder-title:hover{background:rgba(128,128,128,.07)}
+
+.folder-content{
+    padding:3px 7px 7px;
+}
+
+.folder-content.collapsed{display:none}
+
+.reply{
+    padding:8px;
+    margin:3px 0;
+    background:rgba(128,128,128,.05);
+    border:1px solid var(--border);
+    border-radius:4px;
+    cursor:pointer;
+    font-size:10px;
+}
+
+.reply:hover{background:#fff8e3}
+
+.reply.selected{
+    border-color:#e3b43e;
+    background:#fff8df;
+}
+
+.reply-title-small{font-weight:bold}
+
+.personal-folder{
+    border-bottom:1px solid var(--border);
+}
+
+.personal-reply-actions{
+    display:none;
+}
+
+.personal-folder-controls{
+    display:flex;
+    gap:3px;
+}
+
+.personal-folder-controls button{
+    border:1px solid var(--border);
+    background:var(--panel);
+    color:var(--text);
+    font-size:8px;
+    padding:2px 4px;
+}
+
+/* MENUS */
+
+.add-menu,
+.context-menu{
+    position:fixed;
+    z-index:1000;
+    background:var(--panel);
+    border:1px solid var(--border);
+    box-shadow:0 5px 20px rgba(0,0,0,.15);
+    display:none;
+}
+
+.menu-button{
+    display:block;
+    width:100%;
+    border:0;
+    background:transparent;
+    color:var(--text);
+    text-align:left;
+    padding:9px 12px;
+    font-size:10px;
+}
+
+.menu-button:hover{background:rgba(128,128,128,.1)}
+
+/* MODALS */
+
+.modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.35);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:5000;
+}
+
+.modal-overlay.show{display:flex}
+
+.modal{
+    width:430px;
+    max-width:94vw;
+    background:var(--panel);
+    color:var(--text);
+    border-radius:6px;
+    box-shadow:0 15px 40px rgba(0,0,0,.25);
+}
+
+.modal.large{
+    width:900px;
+    max-height:88vh;
+}
+
+.modal-header{
+    height:45px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 13px;
+    border-bottom:1px solid var(--border);
+    font-weight:bold;
+}
+
+.modal-close{
+    border:0;
+    background:transparent;
+    color:var(--muted);
+    font-size:20px;
+}
+
+.modal-body{
+    padding:14px;
+    max-height:65vh;
+    overflow-y:auto;
+}
+
+.modal-footer{
+    display:flex;
+    justify-content:flex-end;
+    gap:6px;
+    padding:10px 13px;
+    border-top:1px solid var(--border);
+}
+
+.form-group{margin-bottom:12px}
+
+.form-group label{
+    display:block;
+    margin-bottom:5px;
+    font-weight:bold;
+    font-size:10px;
+}
+
+.form-group input,
+.form-group textarea,
+.folder-select{
+    width:100%;
+    border:1px solid var(--border);
+    border-radius:4px;
+    padding:8px;
+    font-size:11px;
+    background:var(--panel);
+    color:var(--text);
+}
+
+.form-group textarea{
+    min-height:100px;
+    resize:vertical;
+}
+
+.cancel-btn,
+.save-btn,
+.danger-btn{
+    border:1px solid var(--border);
+    border-radius:4px;
+    padding:7px 12px;
+    font-size:10px;
+}
+
+.cancel-btn{
+    background:var(--panel);
+    color:var(--text);
+}
+
+.save-btn{
+    background:var(--accent);
+    color:#fff;
+    border-color:var(--accent);
+}
+
+.danger-btn{
+    background:#d33;
+    color:#fff;
+    border-color:#d33;
+}
+
+/* SUMMARY */
+
+.summary-count{
+    margin-bottom:10px;
+    font-weight:bold;
+}
+
+.summary-table-wrap{
+    overflow:auto;
+    max-height:55vh;
+    border:1px solid var(--border);
+}
+
+.summary-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:10px;
+}
+
+.summary-table th,
+.summary-table td{
+    border:1px solid var(--border);
+    padding:7px;
+    text-align:left;
+    vertical-align:top;
+}
+
+.summary-table th{
+    background:rgba(128,128,128,.1);
+    position:sticky;
+    top:0;
+}
+
+/* SETTINGS */
+
+.theme-options{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:7px;
+}
+
+.theme-option{
+    padding:10px;
+    border:1px solid var(--border);
+    border-radius:5px;
+    background:var(--panel);
+    color:var(--text);
+}
+
+.profile-upload{
+    display:flex;
+    gap:10px;
+    align-items:center;
+}
+
+.profile-preview{
+    width:50px;
+    height:50px;
+    border-radius:50%;
+    object-fit:cover;
+    background:#ddd;
+}
+
+.toast{
+    position:fixed;
+    right:20px;
+    bottom:20px;
+    background:#222;
+    color:#fff;
+    padding:9px 13px;
+    border-radius:5px;
+    font-size:10px;
+    z-index:9999;
+}
+
+@media(max-width:1000px){
+    .script-panel{width:270px}
+    .chat-list-panel{width:220px}
+}
+
+@media(max-width:760px){
+    .sidebar{width:55px}
+    .chat-list-panel{width:190px}
+    .script-panel{position:absolute;right:0;top:0;bottom:0;z-index:20}
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+
+    <div class="logo" title="Upload Profile Picture"
+         onclick="openProfileSettings()">
+
+        <div class="logo-circle" id="profileCircle">
+            G
+        </div>
+
+    </div>
+
+    <div class="online">
+        Offline
+    </div>
+
+    <div class="side-item active">
+        <div class="side-icon">▣</div>
+        <div class="side-label">Chats</div>
+    </div>
+
+    <div class="side-item">
+        <div class="side-icon">◉</div>
+        <div class="side-label">Visitors</div>
+    </div>
+
+    <div class="side-item">
+        <div class="side-icon">↪</div>
+        <div class="side-label">Transfer</div>
+    </div>
+
+    <div class="side-bottom">
+        <div class="side-item" onclick="openSettings()">
+            <div class="side-icon">⚙</div>
+            <div class="side-label">Settings</div>
+        </div>
+    </div>
+
+</div>
+
+
+<!-- LEFT CHAT LIST -->
+<div class="chat-list-panel">
+
+    <div class="list-tabs">
+
+        <button class="list-tab active"
+                id="myTab"
+                onclick="switchTab('my')">
+            ◉ My
+        </button>
+
+        <button class="list-tab"
+                id="allTab"
+                onclick="switchTab('all')">
+            ♧ All ▾
+        </button>
+
+        <button class="list-tab"
+                id="endedTab"
+                onclick="switchTab('ended')">
+            ▱ Ended
+        </button>
+
+    </div>
+
+    <div id="chatListView"
+         class="chat-list-view">
+    </div>
+
+    <div class="visitor-footer">
+
+        <b>Total Online Visitors:</b>
+        <span id="onlineVisitors">
+            Offline
+        </span>
+
+        <br>
+
+        <b>Total Chat:</b>
+        <span id="totalVisitors">
+            0
+        </span>
+
+    </div>
+
+</div>
+
+
+<!-- MAIN -->
+<div class="main-chat">
+
+    <div class="chat-header">
+
+        <span class="header-icon">◉</span>
+
+        <span class="header-title">
+            Live Chat
+        </span>
+
+        <div class="header-actions">
+
+            <span class="transfer"
+                  onclick="showToast('Transfer feature is ready for integration.')">
+                ↗ Transfer
+            </span>
+
+            <span class="end"
+                  onclick="endConversation()">
+                ✕ End
+            </span>
+
+        </div>
+
+    </div>
+
+
+    <div id="chatBody"
+         class="chat-body">
+    </div>
+
+
+    <!-- VISITOR SIMULATOR -->
+
+    <div class="visitor-simulator">
+
+        <input
+            id="visitorInput"
+            type="text"
+            placeholder="Type visitor message...">
+
+        <button
+            class="visitor-send"
+            onclick="sendVisitorMessage()">
+            Send Visitor
+        </button>
+
+    </div>
+
+
+    <!-- EDITOR -->
+
+    <div class="editor">
+
+        <div class="toolbar">
+
+            <span class="tool">F⌄</span>
+            <span class="tool">Tᵀ</span>
+            <span class="tool">A⌄</span>
+            <span class="tool">A</span>
+            <span class="tool"><b>B</b></span>
+            <span class="tool"><i>I</i></span>
+            <span class="tool"><u>U</u></span>
+            <span class="tool">≡</span>
+            <span class="tool">≡</span>
+            <span class="tool">≡</span>
+            <span class="tool">☷</span>
+            <span class="tool">☷</span>
+            <span class="tool">🔗</span>
+
+            <button class="saved-replies-toggle"
+                    onclick="toggleScripts()">
+                ⚡ Saved Replies
+            </button>
+
+        </div>
+
+        <div class="editor-area">
+
+            <textarea
+                id="messageInput"
+                placeholder="Type your message here..."></textarea>
+
+        </div>
+
+        <div class="editor-footer">
+
+            <button onclick="saveConversation()">
+                💾 Save
+            </button>
+
+            <button onclick="copyMessage()">
+                📋 Copy
+            </button>
+
+            <button class="send"
+                    onclick="sendMessage()">
+                Send ▼
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- SCRIPT PANEL -->
+<div id="scriptPanel"
+     class="script-panel">
+
+    <div class="search">
+
+        <input
+            id="searchInput"
+            type="text"
+            placeholder="Search saved replies..."
+            oninput="searchScripts()">
+
+    </div>
+
+
+    <!-- PERSONAL -->
+
+    <div class="category">
+
+        <div class="category-title">
+
+            <span class="category-title-text"
+                  onclick="openPersonalAddMenu(event)">
+                ⊟ 📁 Personal Category
+            </span>
+
+            <button class="add-btn"
+                    onclick="openPersonalAddMenu(event)">
+                + Add
+            </button>
+
+        </div>
+
+        <div id="personalContent"></div>
+
+    </div>
+
+
+    <!-- PUBLIC -->
+
+    <div class="category">
+
+        <div class="category-title">
+
+            <span class="category-title-text">
+                ⊟ 📁 Public Category
+            </span>
+
+        </div>
+
+
+        <!-- GREETING -->
+
+        <div class="folder">
+
+            <div class="folder-title"
+                 onclick="toggleFolder(this)">
+                📁 Greeting
+                <span>⌄</span>
+            </div>
+
+            <div class="folder-content collapsed">
+
+                <div class="reply public-reply"
+                     data-title="unclear issues"
+                     data-content="Could you send us pictures of the problem you’re experiencing? This will help us assist you better. Thank you."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    unclear issues
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="state clearly"
+                     data-content="Dear player, kindly describe your issue in detail so we can assist you better. Thank you!"
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    state clearly
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="state bonus"
+                     data-content="Please specify the bonus in question so we can provide accurate assistance."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    state bonus
+                </div>
+
+            </div>
+        </div>
+
+
+        <!-- DEPOSIT -->
+
+        <div class="folder">
+
+            <div class="folder-title"
+                 onclick="toggleFolder(this)">
+                📁 Deposit follow up
+                <span>⌄</span>
+            </div>
+
+            <div class="folder-content collapsed">
+
+                <div class="reply public-reply"
+                     data-title="deposit management"
+                     data-content="I have already sent your deposit issue to our management team for follow-up. We are now waiting for their confirmation."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Deposit sent to management
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="deposit under process"
+                     data-content="We understand your concern. Your deposit request has already been sent to management and is under process. Sometimes, it may take a little time for the system and management to verify everything. Please kindly wait, and we will notify you immediately once it is confirmed."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Deposit under process
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="deposit delay"
+                     data-content="We apologize for the delay in your deposit. In some cases, delays may occur due to banking processes or network congestion. If your deposit has not yet been credited, please allow a little more time, as our finance team is monitoring it closely."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Deposit delay
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="deposit verification"
+                     data-content="Your deposit request has already been submitted and is under process by management. Please kindly wait while they verify everything. We will notify you immediately once it is confirmed. Thank you for your patience."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Deposit verification
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="deposit still verification"
+                     data-content="Dear player, your deposit is still under verification by management. We understand you want it quickly, but please note that we cannot speed up the process manually. Rest assured, once the verification is complete, your funds will be credited automatically."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Deposit still verifying
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="deposit short time"
+                     data-content="Hello. I understand you want your deposit processed quickly. Please note that deposits usually take a short time to confirm."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Deposit confirmation
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="deposit finance"
+                     data-content="Don’t worry, dear. Our finance department will process your deposit into your account as soon as we receive your funds. Thank you for your understanding."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Deposit finance
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="deposit forwarded"
+                     data-content="At this stage, I’ve already forwarded your deposit issue to our management team for follow-up. Kindly note that this is the only step I can assist with from my side. Please allow them some time to review and process your request. Thank you for your patience."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Deposit forwarded
+                </div>
+
+            </div>
+        </div>
+
+
+        <!-- WITHDRAW FOLLOW UP -->
+
+        <div class="folder">
+
+            <div class="folder-title"
+                 onclick="toggleFolder(this)">
+                📁 Withdraw follow up
+                <span>⌄</span>
+            </div>
+
+            <div class="folder-content collapsed">
+
+                <div class="reply public-reply"
+                     data-title="withdraw management"
+                     data-content="I have already sent your Withdrawal issue to our management team for follow-up."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Withdrawal sent to management
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="withdraw finance delay"
+                     data-content="Your withdrawal is being processed by our finance team. Due to high traffic, delays may occur. Thank you for your patience. If there is no problem with your account, the funds will be credited shortly."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Withdrawal finance delay
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="withdraw submitted"
+                     data-content="Your withdrawal request has already been submitted and is under process by management. Thank you for your understanding."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Withdrawal submitted
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="high traffic"
+                     data-content="Many customers are requesting support right now, so things are taking a little longer than usual. Thanks for waiting, we appreciate your patience."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    High traffic
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="withdraw patience"
+                     data-content="We truly appreciate your patience since earlier. Please understand that your request is still under process, and we will notify you right away once there is confirmation. Thank you for waiting with us."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Withdrawal patience
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="withdraw 24 hours"
+                     data-content="Dear, I understand you are waiting. Please rest assured that once your withdrawal is verified, the funds will be credited automatically, usually within 24 hours. Kindly allow the system to complete the process."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Withdrawal within 24 hours
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="withdraw cannot speed"
+                     data-content="All withdrawals are handled by the system. Customer service cannot speed up or manually add funds. Please keep checking your balance or transaction records. Thank you for your patience."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Cannot speed withdrawal
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="withdraw system"
+                     data-content="Dear player, your concern has been noted. Since the system will process this automatically, there is nothing further we can do on this chat. Please kindly wait, and check your account balance later. Thank you for contacting us today."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    System processing
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="withdraw many requests"
+                     data-content="Don’t worry, dear. Our finance department is working hard on it. There are currently many withdrawal requests, so some delays may occur. Once our team finishes reviewing your account, they will process your withdrawal as soon as possible, as long as there are no issues with your account."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Many withdrawal requests
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="withdraw forwarded"
+                     data-content="At this stage, I’ve already forwarded your withdrawal issue to our management team for follow-up. Kindly note that this is the only step I can assist with from my side. Please allow them some time to review and process your request. Thank you for your patience."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Withdrawal forwarded
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="withdraw update"
+                     data-content="Thank you for your patience, your concern has been noted and processed. We’ll notify you immediately once there’s an update. Have a good day."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Withdrawal update
+                </div>
+
+            </div>
+        </div>
+
+
+        <!-- THIRD PARTY -->
+
+        <div class="folder">
+
+            <div class="folder-title"
+                 onclick="toggleFolder(this)">
+                📁 3rdparty processing
+                <span>⌄</span>
+            </div>
+
+            <div class="folder-content collapsed">
+
+                <div class="reply public-reply"
+                     data-title="third party processing"
+                     data-content="Your withdrawal is currently being processed through a third-party payment provider. Please kindly allow some extra time, as delays may occur depending on their system and processing speed. Rest assured, we are closely monitoring the status and will ensure your funds are delivered as soon as possible. Thank you for your patience and understanding."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Third party processing
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="third party bank"
+                     data-content="Thank you for your understanding. Your withdrawal is currently being processed by our third-party payment provider. We have already contacted the relevant bank/payment channel to request expedited processing."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Third party bank follow-up
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="third party waiting"
+                     data-content="At this time, we kindly ask for your patience while the transaction is being completed. We will continue to monitor the status closely and update you immediately if there are any developments."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Third party waiting
+                </div>
+
+            </div>
+        </div>
+
+
+        <!-- SUCCESSFUL -->
+
+        <div class="folder">
+
+            <div class="folder-title"
+                 onclick="toggleFolder(this)">
+                📁 WITHDRAWAL COMPLETED
+                <span>⌄</span>
+            </div>
+
+            <div class="folder-content collapsed">
+
+                <div class="reply public-reply"
+                     data-title="successful but not received"
+                     data-content="The order in the system shows as successful. If you didn't receive the money completely yet, please first wait 24 hours and if it is still not received, provide proof, such as a screen recording video and your bank statement."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Successful but money not received
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="withdraw cancel successful"
+                     data-content="Dear, the order in the system shows as successful, which means the withdrawal cannot be canceled anymore. However, if the bank number you bound is incorrect, you can change it by following these steps:
+1️⃣ Open our game app and click “Penarikan” (Withdrawal).
+2️⃣ Click “Ganti” (Change) to update your bank number.
+3️⃣ Then select “Merevisi” (Revise) and enter your correct bank number.
+4️⃣ Finally, click “Yakin” (Confirm) to save the changes."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Cancel but successful
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="withdraw sent bank"
+                     data-content="Dear, the withdrawal request has already been sent to the bank. At this stage it cannot be canceled. We need to wait for the bank’s result — if the account number is invalid, the transaction will fail and your balance will be returned."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Sent to bank
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="withdraw cannot cancel"
+                     data-content="Once a withdrawal request has been submitted, it cannot be canceled. Please kindly wait for the system and management to complete the review process. Thank you for your patience."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Cannot cancel
+                </div>
+
+            </div>
+        </div>
+
+
+        <!-- WITHOUT DEPOSIT -->
+
+        <div class="folder">
+
+            <div class="folder-title"
+                 onclick="toggleFolder(this)">
+                📁 Withdraw ng walang Deposit
+                <span>⌄</span>
+            </div>
+
+            <div class="folder-content collapsed">
+
+                <div class="reply public-reply"
+                     data-title="withdraw without deposit"
+                     data-content="You need to make a deposit first before you can withdraw, even if the betting amount has already been reached."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Withdraw without deposit
+                </div>
+
+            </div>
+        </div>
+
+
+        <!-- FAILED -->
+
+        <div class="folder">
+
+            <div class="folder-title"
+                 onclick="toggleFolder(this)">
+                📁 WITHDRAW FAILED
+                <span>⌄</span>
+            </div>
+
+            <div class="folder-content collapsed">
+
+                <div class="reply public-reply"
+                     data-title="withdraw failed"
+                     data-content="Your withdrawal request was unsuccessful. This may be due to an incorrect fund number entry or because your bank has reached its upper limit. Please kindly check your mailbox, as the system has already refunded the amount there. After claiming the refund, please double-check and enter the correct fund number when submitting your next withdrawal request."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Withdrawal failed
+                </div>
+
+            </div>
+        </div>
+
+
+        <!-- FORGOT PASSWORD -->
+
+        <div class="folder">
+
+            <div class="folder-title"
+                 onclick="toggleFolder(this)">
+                📁 WITHDRAW FORGOT PASSWORD
+                <span>⌄</span>
+            </div>
+
+            <div class="folder-content collapsed">
+
+                <div class="reply public-reply"
+                     data-title="forgot payment password"
+                     data-content="If you have previously set a payment password but have forgotten it, please follow the steps below:
+1. Open your Avatar Profile.
+2. Select “Payment Password Settings.”
+3. Click “Lupa” (Forgot Password).
+4. Verify your identity using the OTP code sent to your registered phone number.
+5. Once verified, you can create a new payment password.
+
+🔒 Security Reminder:
+For your protection, please do not share your account details, passwords, or verification codes with anyone, including individuals claiming to be customer service representatives. Our official team will never ask for your password.
+
+Thank you for your understanding and continued support. We wish you the best of luck and an enjoyable gaming experience! 🎮✨"
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Forgot payment password
+                </div>
+
+            </div>
+        </div>
+
+
+        <!-- BANK -->
+
+        <div class="folder">
+
+            <div class="folder-title"
+                 onclick="toggleFolder(this)">
+                📁 Bank
+                <span>⌄</span>
+            </div>
+
+            <div class="folder-content collapsed">
+
+                <div class="reply public-reply"
+                     data-title="unable to add bank"
+                     data-content="Dear player, please check if bank info is linked to another account. Use one account and one bank card for security. Thank you."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Unable to add bank
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="wrong bank"
+                     data-content="Please carefully check your bank account information before submitting a withdrawal request. If the information is incorrect, the transaction may fail."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Wrong bank information
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="bank maintenance"
+                     data-content="Dear player, the selected payment channel may currently be under maintenance. Please kindly wait and try again later."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Bank maintenance
+                </div>
+
+            </div>
+        </div>
+
+
+        <!-- LOSE PLAYER -->
+
+        <div class="folder">
+
+            <div class="folder-title"
+                 onclick="toggleFolder(this)">
+                📁 Lose player
+                <span>⌄</span>
+            </div>
+
+            <div class="folder-content collapsed">
+
+                <div class="reply public-reply"
+                     data-title="lose player responsible"
+                     data-content="Dear player, we sincerely regret to hear of your loss. Kindly note that all bets and outcomes are determined by chance, and wins cannot be guaranteed. As always, we encourage our valued players to gamble responsibly and within their means. Thank you."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Loss - responsible gaming
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="lose player frustration"
+                     data-content="We really understand your frustration with the recent losses. But please don’t let it ruin your mood. Even the best players have losing streaks sometimes. What matters is playing responsibly and enjoying the process. Keep believing in your luck, it can change at any moment!"
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Loss - frustration
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="losing is never easy"
+                     data-content="Losing is never easy, but it’s important to remember that luck is a big factor. Play responsibly and at your own pace. We appreciate you being with us and we’re wishing you better luck in your upcoming games."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Loss - luck
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="take a break"
+                     data-content="If the game is no longer enjoyable, it’s best to take a break. Whether for a few hours or days, stepping back helps ensure your play stays safe, fun, and balanced."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Loss - take a break
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="thank you sharing"
+                     data-content="Dear player, thank you for sharing your feelings with us. It’s normal to go through ups and downs in betting. Please don’t be discouraged — we wish you better luck in your future games."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Loss - thank you
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="play responsibly"
+                     data-content="We understand how you feel. Please remember to play responsibly and only bet within your comfort. The results are random, and both winning and losing are part of the experience."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Loss - play responsibly
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="customer service cannot control"
+                     data-content="Customer service cannot control or influence the results, but we encourage you to play responsibly and treat the game as entertainment. Thank you for your understanding."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Results cannot be controlled
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="feedback noted"
+                     data-content="Thank you for sharing your concern. 🙏 While we cannot influence game results, please know your feedback has been noted. We hope your next play brings you better luck."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Feedback noted
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="inappropriate language"
+                     data-content="Dear, using inappropriate language or engaging in conversations that contain inappropriate language is not permitted. We reserve the right to suspend or terminate your account if this policy is violated. We are here to help address your concerns, so please be mindful of the words you use. Thank you."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Inappropriate language
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="fair random system"
+                     data-content="Dear player, we sincerely understand your frustration and we’re sorry you feel this way. Please note that all game results are determined by a fair and random system. No one, including customer service, can influence or change the outcome."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Fair random system
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="winning losing streak"
+                     data-content="It is normal to experience both winning streaks and losing streaks. This is part of the gaming experience, and every spin or bet is independent and random."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Winning and losing streaks
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="responsible limits"
+                     data-content="We encourage you to play responsibly and treat the game as entertainment. Please set limits that make you feel comfortable while enjoying the platform."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Responsible limits
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="system fair monitored"
+                     data-content="Thank you for sharing your concerns. 🙏 Rest assured, the system is fair and monitored. We hope your future games bring better results."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    System fair and monitored
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="not rigged"
+                     data-content="I’m really sorry you feel that way. I understand it can be frustrating, but please be assured the system is not rigged. All results are generated fairly for every player."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    System not rigged
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="automated system"
+                     data-content="I hear your concern. The game is run by an automated system where every player has the same chance. There’s no manual control or manipulation involved."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Automated system
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="losing streak break"
+                     data-content="I understand it feels tough when losses happen one after another. Since this is a chance-based game, wins and losses are natural. You may take a break anytime if you feel it’s getting overwhelming."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Losing streak - take break
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="fair play policies"
+                     data-content="I completely understand your frustration. However, I can assure you that the app follows fair play policies and official mechanics. If you’d like, I can guide you to where the rules are written so you can review them."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Fair play policy
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="transaction error"
+                     data-content="I can see how upsetting this is for you. Please know the app strictly follows fair gaming policies. If you think there was an error in your transaction, we can review it for you."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Transaction error
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="no cheating"
+                     data-content="I understand why you feel that way, but I want to clarify that there’s absolutely no cheating involved. The system is designed to be fair and equal for all players."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    No cheating
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="luck can change"
+                     data-content="I get that it’s really frustrating to lose, especially many times in a row. But please remember, luck can always change—it’s part of the game."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Luck can change
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="check transactions"
+                     data-content="I hear your concern, and I want to reassure you that the system is automated. No one can interfere with the results. If you’d like, I can help you check your recent transactions for peace of mind."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Check transactions
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="not rigged chance"
+                     data-content="I’m sorry you’re upset, but I need to emphasize that the app is not rigged. All results are based on chance, and the same rules apply to everyone."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Not rigged - chance
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="fair results"
+                     data-content="Every player has the same opportunities to win, and outcomes are determined randomly by the system."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Equal opportunities
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="game entertainment"
+                     data-content="Please remember to play for entertainment, not just for winning. Treat each game as a fun experience."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Play for entertainment
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="game id review"
+                     data-content="If you notice any unusual activity or errors, you can provide your Game ID, and we will review your account carefully."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Provide Game ID
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="responsible gaming"
+                     data-content="Responsible gaming means knowing when to pause and set limits to stay comfortable while playing."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Responsible gaming
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="random outcomes"
+                     data-content="Randomness is essential to fair gameplay. No outcomes are predetermined or influenced manually."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Random outcomes
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="take break upset"
+                     data-content="Please take a break if you feel upset. It’s important to enjoy games responsibly."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Take a break
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="equal chance"
+                     data-content="Every player is treated fairly. Random number generation ensures no favoritism in any game."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Equal chance
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="support review"
+                     data-content="Thank you for your patience. Our support team is here to check your account or clarify any questions you may have."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Support review
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="transaction details"
+                     data-content="If you think there was an error in a transaction, please provide the details, and we will review it thoroughly."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Transaction details
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="fairness priority"
+                     data-content="Fairness is our top priority. The system ensures every outcome is random and unbiased."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Fairness priority
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="losses chance"
+                     data-content="Losing is part of chance-based games. We recommend taking a short break if you feel frustrated or stressed."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Losses are chance
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="past results"
+                     data-content="Every session is unique, and past results do not affect future outcomes."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Past results do not affect future
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="fair automated system"
+                     data-content="The app is designed for fair play. Wins and losses are determined by an automated random system."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Fair automated system
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="no manipulation"
+                     data-content="All results are independently generated and cannot be manipulated manually by anyone."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    No manual manipulation
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="fair platform"
+                     data-content="The system automatically monitors fairness, and your feedback helps us maintain a safe and fair environment."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Fair platform
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="support available"
+                     data-content="If you encounter any issues, our support team is ready to assist with deposits, withdrawals, or gameplay questions."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Support available
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="respectful communication"
+                     data-content="Please remain polite and respectful during chats, so we can help you as effectively as possible."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Respectful communication
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="system records"
+                     data-content="Every action in the game is logged and checked for fairness."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    System records
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="concern noted"
+                     data-content="Your concern has been noted and will be reviewed by the support team."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Concern noted
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="customer support cannot manipulate"
+                     data-content="Customer support cannot manipulate results but can clarify rules and account status."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Customer support cannot manipulate
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="every spin independent"
+                     data-content="Every spin is independent, and results are generated randomly."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Every spin independent
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="losses normal"
+                     data-content="Losing streaks are normal and do not indicate system issues."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Losing streaks are normal
+                </div>
+
+                <div class="reply public-reply"
+                     data-title="better luck"
+                     data-content="Thank you for your understanding. We hope your next session brings better luck and enjoyment."
+                     onclick="publicOneClick(event,this)"
+                     ondblclick="publicDoubleClick(event,this)">
+                    Better luck
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+</div>
+
+
+<!-- PERSONAL ADD MENU -->
+
+<div id="addMenu"
+     class="add-menu">
+
+    <button class="menu-button"
+            onclick="openAddFolderModal()">
+        📁 Add Folder
+    </button>
+
+    <button class="menu-button"
+            onclick="openAddReplyModal()">
+        💬 Add Reply
+    </button>
+
+</div>
+
+
+<!-- PERSONAL CONTEXT MENU -->
+
+<div id="personalContextMenu"
+     class="context-menu">
+
+    <button class="menu-button"
+            onclick="editSelectedPersonal()">
+        ✏️ Edit
+    </button>
+
+    <button class="menu-button"
+            onclick="deleteSelectedPersonal()">
+        🗑 Delete
+    </button>
+
+</div>
+
+
+<!-- ADD REPLY MODAL -->
+
+<div id="addReplyModal"
+     class="modal-overlay">
+
+    <div class="modal">
+
+        <div class="modal-header">
+
+            <span>Add Personal Reply</span>
+
+            <button class="modal-close"
+                    onclick="closeModal('addReplyModal')">
+                ×
+            </button>
+
+        </div>
+
+        <div class="modal-body">
+
+            <div class="form-group">
+                <label>Reply Title</label>
+                <input id="replyTitle"
+                       type="text"
+                       placeholder="Example: Waiting Customer">
+            </div>
+
+            <div class="form-group">
+                <label>Reply Content</label>
+                <textarea id="replyContent"
+                          placeholder="Type your reply script here..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Folder</label>
+                <select id="replyFolder"
+                        class="folder-select"></select>
+            </div>
+
+        </div>
+
+        <div class="modal-footer">
+
+            <button class="cancel-btn"
+                    onclick="closeModal('addReplyModal')">
+                Cancel
+            </button>
+
+            <button class="save-btn"
+                    onclick="savePersonalReply()">
+                Save Reply
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ADD FOLDER -->
+
+<div id="addFolderModal"
+     class="modal-overlay">
+
+    <div class="modal">
+
+        <div class="modal-header">
+
+            <span>Add Personal Folder</span>
+
+            <button class="modal-close"
+                    onclick="closeModal('addFolderModal')">
+                ×
+            </button>
+
+        </div>
+
+        <div class="modal-body">
+
+            <div class="form-group">
+
+                <label>Folder Name</label>
+
+                <input id="folderName"
+                       type="text"
+                       placeholder="Example: Deposit Scripts">
+
+            </div>
+
+        </div>
+
+        <div class="modal-footer">
+
+            <button class="cancel-btn"
+                    onclick="closeModal('addFolderModal')">
+                Cancel
+            </button>
+
+            <button class="save-btn"
+                    onclick="savePersonalFolder()">
+                Save Folder
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- EDIT REPLY -->
+
+<div id="editReplyModal"
+     class="modal-overlay">
+
+    <div class="modal">
+
+        <div class="modal-header">
+
+            <span>Edit Personal Reply</span>
+
+            <button class="modal-close"
+                    onclick="closeModal('editReplyModal')">
+                ×
+            </button>
+
+        </div>
+
+        <div class="modal-body">
+
+            <div class="form-group">
+
+                <label>Reply Title</label>
+
+                <input id="editReplyTitle"
+                       type="text">
+
+            </div>
+
+            <div class="form-group">
+
+                <label>Reply Content</label>
+
+                <textarea id="editReplyContent"></textarea>
+
+            </div>
+
+        </div>
+
+        <div class="modal-footer">
+
+            <button class="cancel-btn"
+                    onclick="closeModal('editReplyModal')">
+                Cancel
+            </button>
+
+            <button class="save-btn"
+                    onclick="updatePersonalReply()">
+                Save Changes
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- EDIT FOLDER -->
+
+<div id="editFolderModal"
+     class="modal-overlay">
+
+    <div class="modal">
+
+        <div class="modal-header">
+
+            <span>Edit Personal Folder</span>
+
+            <button class="modal-close"
+                    onclick="closeModal('editFolderModal')">
+                ×
+            </button>
+
+        </div>
+
+        <div class="modal-body">
+
+            <div class="form-group">
+
+                <label>Folder Name</label>
+
+                <input id="editFolderName"
+                       type="text">
+
+            </div>
+
+        </div>
+
+        <div class="modal-footer">
+
+            <button class="cancel-btn"
+                    onclick="closeModal('editFolderModal')">
+                Cancel
+            </button>
+
+            <button class="save-btn"
+                    onclick="updatePersonalFolder()">
+                Save Changes
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- DELETE PERSONAL FOLDER -->
+
+<div id="deleteFolderModal"
+     class="modal-overlay">
+
+    <div class="modal">
+
+        <div class="modal-header">
+
+            <span>Delete Personal Folder</span>
+
+            <button class="modal-close"
+                    onclick="closeModal('deleteFolderModal')">
+                ×
+            </button>
+
+        </div>
+
+        <div class="modal-body">
+
+            Are you sure you want to delete this personal folder?
+
+            <br><br>
+
+            Replies inside the folder will be moved to
+            <b>General</b> instead of being deleted.
+
+        </div>
+
+        <div class="modal-footer">
+
+            <button class="cancel-btn"
+                    onclick="closeModal('deleteFolderModal')">
+                Cancel
+            </button>
+
+            <button class="danger-btn"
+                    onclick="confirmDeletePersonalFolder()">
+                Delete
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- DELETE CONVERSATION -->
+
+<div id="deleteConversationModal"
+     class="modal-overlay">
+
+    <div class="modal">
+
+        <div class="modal-header">
+
+            <span>Delete Conversation</span>
+
+            <button class="modal-close"
+                    onclick="closeModal('deleteConversationModal')">
+                ×
+            </button>
+
+        </div>
+
+        <div class="modal-body">
+            Are you sure you want to delete this conversation?
+        </div>
+
+        <div class="modal-footer">
+
+            <button class="cancel-btn"
+                    onclick="closeModal('deleteConversationModal')">
+                Cancel
+            </button>
+
+            <button class="danger-btn"
+                    onclick="confirmDeleteConversation()">
+                Delete
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- DELETE ALL -->
+
+<div id="deleteAllModal"
+     class="modal-overlay">
+
+    <div class="modal">
+
+        <div class="modal-header">
+
+            <span>Delete All Conversations</span>
+
+            <button class="modal-close"
+                    onclick="closeModal('deleteAllModal')">
+                ×
+            </button>
+
+        </div>
+
+        <div class="modal-body">
+
+            Are you sure you want to delete
+            <b>ALL ended conversations</b>?
+
+            <br><br>
+
+            This action cannot be undone.
+
+        </div>
+
+        <div class="modal-footer">
+
+            <button class="cancel-btn"
+                    onclick="closeModal('deleteAllModal')">
+                Cancel
+            </button>
+
+            <button class="danger-btn"
+                    onclick="confirmDeleteAll()">
+                Delete All
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- SUMMARY -->
+
+<div id="summaryModal"
+     class="modal-overlay">
+
+    <div class="modal large">
+
+        <div class="modal-header">
+
+            <span>All Ended Conversations Summary</span>
+
+            <button class="modal-close"
+                    onclick="closeModal('summaryModal')">
+                ×
+            </button>
+
+        </div>
+
+        <div class="modal-body">
+
+            <div id="summaryCount"
+                 class="summary-count"></div>
+
+            <div id="summaryPreview"></div>
+
+        </div>
+
+        <div class="modal-footer">
+
+            <button class="cancel-btn"
+                    onclick="closeModal('summaryModal')">
+                Close
+            </button>
+
+            <button class="save-btn"
+                    onclick="copySummaryForExcel()">
+                📋 Copy Table for Excel
+            </button>
+
+            <button class="save-btn"
+                    onclick="openExcelApp()">
+                📊 Open Excel
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- SETTINGS -->
+
+<div id="settingsModal"
+     class="modal-overlay">
+
+    <div class="modal">
+
+        <div class="modal-header">
+
+            <span>Settings</span>
+
+            <button class="modal-close"
+                    onclick="closeModal('settingsModal')">
+                ×
+            </button>
+
+        </div>
+
+        <div class="modal-body">
+
+            <div class="form-group">
+
+                <label>Theme</label>
+
+                <div class="theme-options">
+
+                    <button class="theme-option"
+                            onclick="setTheme('automatic')">
+                        🌓 Automatic
+                    </button>
+
+                    <button class="theme-option"
+                            onclick="setTheme('original')">
+                        ◻ Original
+                    </button>
+
+                    <button class="theme-option"
+                            onclick="setTheme('dark')">
+                        🌙 Dark Mode
+                    </button>
+
+                    <button class="theme-option"
+                            onclick="setTheme('cyan')">
+                        🩵 Cyan
+                    </button>
+
+                    <button class="theme-option"
+                            onclick="setTheme('facebook')">
+                        🔵 Facebook Blue
+                    </button>
+
+                </div>
+
+            </div>
+
+            <div class="form-group">
+
+                <label>Profile Picture</label>
+
+                <div class="profile-upload">
+
+                    <img id="profilePreview"
+                         class="profile-preview"
+                         alt="Profile">
+
+                    <input id="profileInput"
+                           type="file"
+                           accept="image/*"
+                           onchange="saveProfilePicture(event)">
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="modal-footer">
+
+            <button class="cancel-btn"
+                    onclick="closeModal('settingsModal')">
+                Close
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+/* =========================================================
+STORAGE
+========================================================= */
+
+const STORAGE = {
+    conversations:"gold_raja_ended_conversations_v8",
+    personal:"gold_raja_personal_scripts_v8",
+    profile:"gold_raja_profile_v8",
+    theme:"gold_raja_theme_v8"
+};
+
+
+/* =========================================================
+GLOBAL STATE
+========================================================= */
+
+let currentConversation=[];
+let currentTab="my";
+let selectedConversationId=null;
+let selectedPersonal=null;
+let editingReplyId=null;
+let editingFolderId=null;
+let pendingDeleteConversationId=null;
+let pendingDeleteFolderId=null;
+let currentSummaryRows=[];
+
+
+/* =========================================================
+SAFE ID
+========================================================= */
+
+function makeId(prefix="id"){
+    return prefix+"_"+Date.now()+"_"+Math.random()
+        .toString(36).slice(2,11);
+}
+
+
+/* =========================================================
+STORAGE
+========================================================= */
+
+function getEndedConversations(){
+
+    try{
+        const raw=localStorage.getItem(STORAGE.conversations);
+
+        if(!raw)return [];
+
+        const parsed=JSON.parse(raw);
+
+        return Array.isArray(parsed)?parsed:[];
+
+    }catch(e){
+        console.error(e);
+        return [];
+    }
+}
+
+function setEndedConversations(items){
+
+    localStorage.setItem(
+        STORAGE.conversations,
+        JSON.stringify(items)
+    );
+
+    updateTotalChat();
+}
+
+function getPersonalData(){
+
+    try{
+
+        const raw=localStorage.getItem(STORAGE.personal);
+
+        if(!raw){
+            return {
+                folders:[],
+                replies:[]
+            };
+        }
+
+        const parsed=JSON.parse(raw);
+
+        return {
+            folders:Array.isArray(parsed.folders)?parsed.folders:[],
+            replies:Array.isArray(parsed.replies)?parsed.replies:[]
+        };
+
+    }catch(e){
+
+        return {
+            folders:[],
+            replies:[]
+        };
+    }
+}
+
+function setPersonalData(data){
+
+    localStorage.setItem(
+        STORAGE.personal,
+        JSON.stringify(data)
+    );
+}
+
+
+/* =========================================================
+TIME
+========================================================= */
+
+function getTime(){
+
+    return new Date().toLocaleTimeString(
+        [],
+        {
+            hour:"2-digit",
+            minute:"2-digit",
+            second:"2-digit",
+            hour12:false
+        }
+    );
+}
+
+function getDateTime(){
+    return new Date().toLocaleString();
+}
+
+
+/* =========================================================
+ESCAPE
+========================================================= */
+
+function escapeHtml(value){
+
+    return String(value??"")
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#039;");
+}
+
+
+/* =========================================================
+CHAT
+========================================================= */
+
+function addMessage(text,side){
+
+    if(!text||!String(text).trim())return;
+
+    currentConversation.push({
+        id:makeId("msg"),
+        side:side,
+        text:String(text).trim(),
+        time:getTime()
+    });
+
+    renderCurrentConversation();
+}
+
+function renderCurrentConversation(){
+
+    const body=document.getElementById("chatBody");
+
+    if(!body)return;
+
+    if(!currentConversation.length){
+
+        body.innerHTML=`
+            <div id="emptyChat"
+                 class="empty-chat">
+
+                No messages yet. Type a visitor message below
+                to start a sample conversation.
+
+            </div>
+        `;
+
+        return;
+    }
+
+    body.innerHTML="";
+
+    currentConversation.forEach(message=>{
+
+        const wrapper=document.createElement("div");
+
+        wrapper.className=
+            "message "+
+            (message.side==="right"?"right":"left");
+
+        const box=document.createElement("div");
+
+        box.className="message-box";
+
+        box.innerHTML=
+            escapeHtml(message.text).replace(/\n/g,"<br>")+
+            `<span class="message-time">
+                ${escapeHtml(message.time)}
+            </span>`;
+
+        const avatar=document.createElement("div");
+
+        avatar.className="avatar";
+
+        if(message.side==="right"){
+
+            wrapper.appendChild(box);
+            wrapper.appendChild(avatar);
+
+        }else{
+
+            wrapper.appendChild(avatar);
+            wrapper.appendChild(box);
+
+        }
+
+        body.appendChild(wrapper);
+
+    });
+
+    body.scrollTop=body.scrollHeight;
+}
+
+function sendVisitorMessage(){
+
+    const input=document.getElementById("visitorInput");
+
+    if(!input)return;
+
+    const value=input.value.trim();
+
+    if(!value)return;
+
+    addMessage(value,"left");
+
+    input.value="";
+    input.focus();
+}
+
+function sendMessage(){
+
+    const input=document.getElementById("messageInput");
+
+    if(!input)return;
+
+    const value=input.value.trim();
+
+    if(!value)return;
+
+    addMessage(value,"right");
+
+    input.value="";
+    input.focus();
+}
+
+
+/* =========================================================
+COPY
+========================================================= */
+
+async function copyMessage(){
+
+    const input=document.getElementById("messageInput");
+
+    if(!input||!input.value.trim()){
+
+        showToast("Nothing to copy.");
+
+        return;
+    }
+
+    try{
+
+        await navigator.clipboard.writeText(input.value);
+
+        showToast("Message copied.");
+
+    }catch(e){
+
+        input.select();
+        document.execCommand("copy");
+
+        showToast("Message copied.");
+    }
+}
+
+
+/* =========================================================
+SAVE
+========================================================= */
+
+function saveConversation(){
+
+    if(!currentConversation.length){
+
+        showToast("There is no conversation to save.");
+
+        return null;
+    }
+
+    const conversations=getEndedConversations();
+
+    const conversation={
+        id:makeId("conversation"),
+        createdAt:getDateTime(),
+        endedAt:getDateTime(),
+        messages:JSON.parse(
+            JSON.stringify(currentConversation)
+        )
+    };
+
+    conversations.push(conversation);
+
+    setEndedConversations(conversations);
+
+    renderChatList();
+
+    showToast("Conversation saved to Ended.");
+
+    return conversation;
+}
+
+function endConversation(){
+
+    if(!currentConversation.length){
+
+        showToast("There is no conversation to end.");
+
+        clearCurrentConversation();
+
+        return;
+    }
+
+    saveConversation();
+
+    clearCurrentConversation();
+
+    currentTab="my";
+
+    updateTabs();
+    renderChatList();
+
+    showToast(
+        "Conversation ended. New conversation is ready."
+    );
+}
+
+function clearCurrentConversation(){
+
+    currentConversation=[];
+    selectedConversationId=null;
+
+    const visitorInput=document.getElementById("visitorInput");
+    const messageInput=document.getElementById("messageInput");
+
+    if(visitorInput)visitorInput.value="";
+    if(messageInput)messageInput.value="";
+
+    renderCurrentConversation();
+}
+
+
+/* =========================================================
+TABS
+========================================================= */
+
+function switchTab(tab){
+
+    currentTab=tab;
+
+    updateTabs();
+    renderChatList();
+}
+
+function updateTabs(){
+
+    const tabs={
+        my:document.getElementById("myTab"),
+        all:document.getElementById("allTab"),
+        ended:document.getElementById("endedTab")
+    };
+
+    Object.values(tabs).forEach(button=>{
+        if(button)button.classList.remove("active");
+    });
+
+    if(tabs[currentTab]){
+        tabs[currentTab].classList.add("active");
+    }
+}
+
+
+/* =========================================================
+CHAT LIST
+========================================================= */
+
+function renderChatList(){
+
+    const container=document.getElementById("chatListView");
+
+    if(!container)return;
+
+    const conversations=getEndedConversations();
+
+    if(currentTab==="all"){
+
+        container.innerHTML=`
+            <div class="no-chat">
+                All tab is reserved for the future
+                online/global chat system.
+                <br><br>
+                Offline for now.
+            </div>
+        `;
+
+        return;
+    }
+
+    if(currentTab!=="ended"){
+
+        container.innerHTML=`
+            <div class="no-chat">
+                No active chats yet.
+                <br><br>
+                Use the Visitor Simulator below
+                to create a sample conversation.
+            </div>
+        `;
+
+        return;
+    }
+
+    if(!conversations.length){
+
+        container.innerHTML=`
+            <div class="no-chat">
+                No ended conversations yet.
+            </div>
+        `;
+
+        return;
+    }
+
+    container.innerHTML="";
+
+    conversations.slice().reverse().forEach(conversation=>{
+
+        const messages=conversation.messages||[];
+
+        const first=messages.find(
+            m=>m.side==="left"
+        );
+
+        const preview=first
+            ?first.text
+            :"No visitor message";
+
+        const item=document.createElement("div");
+
+        item.className=
+            "chat-list-item"+
+            (
+                selectedConversationId===conversation.id
+                ?" selected":""
+            );
+
+        item.onclick=function(){
+
+            selectedConversationId=conversation.id;
+
+            renderChatList();
+        };
+
+        item.innerHTML=`
+
+            <div class="chat-list-title">
+                Conversation
+            </div>
+
+            <div class="chat-list-preview">
+                ${escapeHtml(preview)}
+            </div>
+
+            <div class="chat-list-time">
+                ${escapeHtml(conversation.endedAt||"")}
+            </div>
+
+            <div class="chat-list-actions">
+
+                <button
+                    onclick="event.stopPropagation();
+                    openSingleConversation('${escapeJs(conversation.id)}')">
+                    Open
+                </button>
+
+                <button
+                    class="delete-small"
+                    onclick="event.stopPropagation();
+                    askDeleteConversation('${escapeJs(conversation.id)}')">
+                    Delete
+                </button>
+
+            </div>
+        `;
+
+        container.appendChild(item);
+    });
+
+    const footer=document.createElement("div");
+
+    footer.className="ended-bottom";
+
+    footer.innerHTML=`
+
+        <button onclick="summarizeAllEnded()">
+            📊 Summarize
+        </button>
+
+        <button class="delete-all"
+                onclick="askDeleteAll()">
+            🗑 Delete All
+        </button>
+
+    `;
+
+    container.appendChild(footer);
+}
+
+function escapeJs(value){
+
+    return String(value)
+        .replace(/\\/g,"\\\\")
+        .replace(/'/g,"\\'");
+}
+
+
+/* =========================================================
+OPEN CONVERSATION
+========================================================= */
+
+function openSingleConversation(id){
+
+    const conversations=getEndedConversations();
+
+    const conversation=conversations.find(
+        item=>item.id===id
+    );
+
+    if(!conversation){
+
+        showToast("Conversation not found.");
+
+        return;
+    }
+
+    currentConversation=
+        JSON.parse(
+            JSON.stringify(
+                conversation.messages||[]
+            )
+        );
+
+    selectedConversationId=id;
+
+    renderCurrentConversation();
+
+    currentTab="ended";
+
+    updateTabs();
+    renderChatList();
+
+    showToast("Conversation opened.");
+}
+
+
+/* =========================================================
+DELETE ONE
+========================================================= */
+
+function askDeleteConversation(id){
+
+    pendingDeleteConversationId=id;
+
+    openModal("deleteConversationModal");
+}
+
+function confirmDeleteConversation(){
+
+    if(!pendingDeleteConversationId){
+
+        closeModal("deleteConversationModal");
+
+        return;
+    }
+
+    const conversations=getEndedConversations();
+
+    const filtered=conversations.filter(
+        conversation=>
+            conversation.id!==pendingDeleteConversationId
+    );
+
+    setEndedConversations(filtered);
+
+    if(
+        selectedConversationId===
+        pendingDeleteConversationId
+    ){
+
+        clearCurrentConversation();
+    }
+
+    pendingDeleteConversationId=null;
+
+    closeModal("deleteConversationModal");
+
+    renderChatList();
+
+    showToast("Conversation deleted.");
+}
+
+
+/* =========================================================
+DELETE ALL
+========================================================= */
+
+function askDeleteAll(){
+
+    const conversations=getEndedConversations();
+
+    if(!conversations.length){
+
+        showToast("There are no ended conversations.");
+
+        return;
+    }
+
+    openModal("deleteAllModal");
+}
+
+function confirmDeleteAll(){
+
+    setEndedConversations([]);
+
+    currentConversation=[];
+    selectedConversationId=null;
+
+    closeModal("deleteAllModal");
+
+    renderCurrentConversation();
+    renderChatList();
+
+    showToast("All ended conversations deleted.");
+}
+
+
+/* =========================================================
+SUMMARY DETECTION
+========================================================= */
+
+function detectUserId(text){
+
+    const matches=String(text||"")
+        .match(/\b\d{9}\b/g);
+
+    return matches&&matches.length
+        ?matches[0]
+        :"not applicable";
+}
+
+function detectOrderNumber(text){
+
+    const matches=String(text||"")
+        .match(/\b2608\d{16}\b/g);
+
+    return matches&&matches.length
+        ?matches[0]
+        :"not applicable";
+}
+
+function detectContactNumber(text){
+
+    const matches=String(text||"")
+        .match(/\b\d{11,12}\b/g);
+
+    return matches&&matches.length
+        ?matches[0]
+        :"not applicable";
+}
+
+function getReason(messages){
+
+    const visitorMessage=messages.find(
+        message=>message.side==="left"
+    );
+
+    return visitorMessage
+        ?visitorMessage.text
+        :"not applicable";
+}
+
+function getActionTaken(messages){
+
+    const agentMessages=messages.filter(
+        message=>message.side==="right"
+    );
+
+    if(!agentMessages.length){
+        return "not applicable";
+    }
+
+    return agentMessages[
+        agentMessages.length-1
+    ].text;
+}
+
+function summarizeConversation(conversation){
+
+    const messages=conversation.messages||[];
+
+    const fullText=messages
+        .map(message=>message.text||"")
+        .join(" ");
+
+    return{
+
+        userId:detectUserId(fullText),
+
+        orderNo:detectOrderNumber(fullText),
+
+        reason:getReason(messages),
+
+        actionTaken:getActionTaken(messages),
+
+        contactNumber:detectContactNumber(fullText)
+
+    };
+}
+
+function summarizeAllEnded(){
+
+    const conversations=getEndedConversations();
+
+    currentSummaryRows=conversations.map(
+        summarizeConversation
+    );
+
+    renderSummaryTable(currentSummaryRows);
+
+    openModal("summaryModal");
+}
+
+function renderSummaryTable(rows){
+
+    const count=document.getElementById("summaryCount");
+    const preview=document.getElementById("summaryPreview");
+
+    if(!count||!preview)return;
+
+    count.textContent=
+        rows.length+
+        " ended conversation(s) summarized.";
+
+    if(!rows.length){
+
+        preview.innerHTML=`
+            <div style="
+                padding:20px;
+                text-align:center;
+                color:#999;">
+                No ended conversations to summarize.
+            </div>
+        `;
+
+        return;
+    }
+
+    let html=`
+        <div class="summary-table-wrap">
+
+        <table class="summary-table">
+
+        <thead>
+        <tr>
+            <th>User ID</th>
+            <th>Order No.</th>
+            <th>Reason</th>
+            <th>Action Taken</th>
+            <th>Contact Number</th>
+        </tr>
+        </thead>
+
+        <tbody>
+    `;
+
+    rows.forEach(row=>{
+
+        html+=`
+            <tr>
+                <td>${escapeHtml(row.userId)}</td>
+                <td>${escapeHtml(row.orderNo)}</td>
+                <td>${escapeHtml(row.reason)}</td>
+                <td>${escapeHtml(row.actionTaken)}</td>
+                <td>${escapeHtml(row.contactNumber)}</td>
+            </tr>
+        `;
+    });
+
+    html+=`
+        </tbody>
+        </table>
+        </div>
+    `;
+
+    preview.innerHTML=html;
+}
+
+function getExcelTSV(){
+
+    const rows=currentSummaryRows||[];
+
+    const lines=[];
+
+    lines.push([
+        "User ID",
+        "Order No.",
+        "Reason",
+        "Action Taken",
+        "Contact Number"
+    ].join("\t"));
+
+    rows.forEach(row=>{
+
+        lines.push([
+            row.userId,
+            row.orderNo,
+            row.reason,
+            row.actionTaken,
+            row.contactNumber
+        ]
+        .map(value=>
+            String(value??"")
+            .replace(/\t/g," ")
+            .replace(/\r?\n/g," ")
+        )
+        .join("\t"));
+
+    });
+
+    return lines.join("\n");
+}
+
+async function copySummaryForExcel(){
+
+    if(!currentSummaryRows.length){
+
+        showToast("There are no summaries to copy.");
+
+        return;
+    }
+
+    const tsv=getExcelTSV();
+
+    try{
+
+        await navigator.clipboard.writeText(tsv);
+
+        showToast(
+            "All summary rows copied. Paste into Excel."
+        );
+
+    }catch(e){
+
+        const textarea=document.createElement("textarea");
+
+        textarea.value=tsv;
+
+        document.body.appendChild(textarea);
+
+        textarea.select();
+
+        document.execCommand("copy");
+
+        textarea.remove();
+
+        showToast("All summary rows copied.");
+    }
+}
+
+async function openExcelApp(){
+
+    if(!currentSummaryRows.length){
+
+        showToast("There are no summaries to open.");
+
+        return;
+    }
+
+    await copySummaryForExcel();
+
+    window.open(
+        "https://www.office.com/launch/excel",
+        "_blank"
+    );
+}
+
+
+/* =========================================================
+SCRIPT SEARCH
+========================================================= */
+
+function searchScripts(){
+
+    const input=document.getElementById("searchInput");
+
+    const query=input
+        ?input.value.trim().toLowerCase()
+        :"";
+
+    document.querySelectorAll(".folder").forEach(folder=>{
+
+        const replies=
+            [...folder.querySelectorAll(".reply")];
+
+        const title=
+            (
+                folder.querySelector(".folder-title")
+                ?.textContent||""
+            ).toLowerCase();
+
+        let folderMatch=
+            !query||
+            title.includes(query);
+
+        let visibleCount=0;
+
+        replies.forEach(reply=>{
+
+            const text=(
+                reply.dataset.title||
+                reply.textContent||
+                ""
+            ).toLowerCase();
+
+            const content=(
+                reply.dataset.content||
+                ""
+            ).toLowerCase();
+
+            const matches=
+                !query||
+                folderMatch||
+                text.includes(query)||
+                content.includes(query);
+
+            reply.style.display=
+                matches?"":"none";
+
+            if(matches)visibleCount++;
+        });
+
+        if(query){
+
+            folder.style.display=
+                visibleCount||folderMatch
+                ?"":"none";
+
+            const content=
+                folder.querySelector(".folder-content");
+
+            if(content&&visibleCount){
+                content.classList.remove("collapsed");
+            }
+
+        }else{
+
+            folder.style.display="";
+
+            replies.forEach(reply=>{
+                reply.style.display="";
+            });
+        }
+
+    });
+
+    document.querySelectorAll(".personal-folder").forEach(folder=>{
+
+        const replies=
+            [...folder.querySelectorAll(".personal-reply")];
+
+        let visible=0;
+
+        replies.forEach(reply=>{
+
+            const text=(
+                reply.dataset.title||
+                reply.dataset.content||
+                ""
+            ).toLowerCase();
+
+            const match=
+                !query||
+                text.includes(query);
+
+            reply.style.display=
+                match?"":"none";
+
+            if(match)visible++;
+        });
+
+        folder.style.display=
+            !query||visible?"":"none";
+
+    });
+}
+
+
+/* =========================================================
+FOLDER TOGGLE
+========================================================= */
+
+function toggleFolder(element){
+
+    const content=element.nextElementSibling;
+
+    if(!content)return;
+
+    content.classList.toggle("collapsed");
+}
+
+
+/* =========================================================
+PUBLIC REPLY
+========================================================= */
+
+function publicOneClick(event,element){
+
+    document.querySelectorAll(".reply")
+        .forEach(item=>
+            item.classList.remove("selected")
+        );
+
+    element.classList.add("selected");
+
+    selectedPersonal={
+        type:"public",
+        element:element
+    };
+}
+
+function publicDoubleClick(event,element){
+
+    event.preventDefault();
+
+    const content=element.dataset.content||"";
+
+    if(!content)return;
+
+    const input=document.getElementById(
+        "messageInput"
+    );
+
+    if(input){
+
+        input.value=content;
+
+        input.focus();
+    }
+}
+
+
+/* =========================================================
+PERSONAL MENU
+========================================================= */
+
+function openPersonalAddMenu(event){
+
+    if(event){
+        event.stopPropagation();
+    }
+
+    const menu=document.getElementById("addMenu");
+
+    if(!menu)return;
+
+    menu.style.display="block";
+
+    const target=
+        event.currentTarget||
+        event.target;
+
+    const rect=target.getBoundingClientRect();
+
+    menu.style.left=rect.left+"px";
+    menu.style.top=(rect.bottom+5)+"px";
+}
+
+function hideAddMenu(){
+
+    const menu=document.getElementById("addMenu");
+
+    if(menu){
+        menu.style.display="none";
+    }
+}
+
+
+/* =========================================================
+PERSONAL RENDER
+========================================================= */
+
+function renderPersonalData(){
+
+    const container=
+        document.getElementById(
+            "personalContent"
+        );
+
+    if(!container)return;
+
+    const data=getPersonalData();
+
+    if(
+        !data.folders.length&&
+        !data.replies.length
+    ){
+
+        container.innerHTML=`
+            <div class="personal-empty">
+
+                Your Personal Category is empty.<br>
+                Click <b>+ Add</b> to create your own folder
+                or reply script.
+
+            </div>
+        `;
+
+        populateFolderSelect();
+
+        return;
+    }
+
+    container.innerHTML="";
+
+    data.folders.forEach(folder=>{
+
+        const folderReplies=data.replies.filter(
+            reply=>reply.folderId===folder.id
+        );
+
+        const folderElement=
+            document.createElement("div");
+
+        folderElement.className="personal-folder";
+
+        folderElement.innerHTML=`
+
+            <div class="folder-title">
+
+                <span onclick="toggleFolder(this.parentElement)">
+                    📁 ${escapeHtml(folder.name)}
+                </span>
+
+                <span class="personal-folder-controls">
+
+                    <button
+                        onclick="event.stopPropagation();
+                        editPersonalFolder('${escapeJs(folder.id)}')">
+                        ✏️
+                    </button>
+
+                    <button
+                        onclick="event.stopPropagation();
+                        askDeletePersonalFolder('${escapeJs(folder.id)}')">
+                        🗑
+                    </button>
+
+                </span>
+
+            </div>
+
+            <div class="folder-content collapsed"></div>
+        `;
+
+        const content=
+            folderElement.querySelector(
+                ".folder-content"
+            );
+
+        folderReplies.forEach(reply=>{
+
+            content.appendChild(
+                createPersonalReplyElement(reply)
+            );
+
+        });
+
+        container.appendChild(folderElement);
+    });
+
+    const unassigned=data.replies.filter(
+        reply=>
+            !data.folders.some(
+                folder=>folder.id===reply.folderId
+            )
+    );
+
+    if(unassigned.length){
+
+        const folderElement=
+            document.createElement("div");
+
+        folderElement.className="personal-folder";
+
+        folderElement.innerHTML=`
+            <div class="folder-title">
+                📁 General
+            </div>
+
+            <div class="folder-content"></div>
+        `;
+
+        const content=
+            folderElement.querySelector(
+                ".folder-content"
+            );
+
+        unassigned.forEach(reply=>{
+
+            content.appendChild(
+                createPersonalReplyElement(reply)
+            );
+
+        });
+
+        container.appendChild(folderElement);
+    }
+
+    populateFolderSelect();
+}
+
+function createPersonalReplyElement(reply){
+
+    const element=document.createElement("div");
+
+    element.className="reply personal-reply";
+
+    element.dataset.title=reply.title;
+    element.dataset.content=reply.content;
+    element.dataset.replyId=reply.id;
+
+    element.textContent=reply.title;
+
+    element.onclick=function(){
+
+        selectedPersonal={
+            type:"reply",
+            id:reply.id
+        };
+
+        document.querySelectorAll(".reply")
+            .forEach(item=>
+                item.classList.remove("selected")
+            );
+
+        element.classList.add("selected");
+    };
+
+    element.ondblclick=function(event){
+
+        event.preventDefault();
+
+        const input=document.getElementById(
+            "messageInput"
+        );
+
+        if(input){
+
+            input.value=reply.content;
+            input.focus();
+        }
+    };
+
+    element.oncontextmenu=function(event){
+
+        event.preventDefault();
+
+        selectedPersonal={
+            type:"reply",
+            id:reply.id
+        };
+
+        openPersonalContextMenu(event);
+    };
+
+    return element;
+}
+
+
+/* =========================================================
+FOLDER SELECT
+========================================================= */
+
+function populateFolderSelect(){
+
+    const select=
+        document.getElementById(
+            "replyFolder"
+        );
+
+    if(!select)return;
+
+    const data=getPersonalData();
+
+    select.innerHTML="";
+
+    if(!data.folders.length){
+
+        select.innerHTML=
+            `<option value="">General</option>`;
+
+        return;
+    }
+
+    data.folders.forEach(folder=>{
+
+        const option=document.createElement("option");
+
+        option.value=folder.id;
+        option.textContent=folder.name;
+
+        select.appendChild(option);
+    });
+}
+
+
+/* =========================================================
+ADD PERSONAL FOLDER
+========================================================= */
+
+function openAddFolderModal(){
+
+    hideAddMenu();
+
+    const input=document.getElementById(
+        "folderName"
+    );
+
+    if(input)input.value="";
+
+    openModal("addFolderModal");
+}
+
+function savePersonalFolder(){
+
+    const input=document.getElementById(
+        "folderName"
+    );
+
+    const name=input
+        ?input.value.trim()
+        :"";
+
+    if(!name){
+
+        showToast("Please enter a folder name.");
+
+        return;
+    }
+
+    const data=getPersonalData();
+
+    data.folders.push({
+        id:makeId("folder"),
+        name:name
+    });
+
+    setPersonalData(data);
+
+    closeModal("addFolderModal");
+
+    renderPersonalData();
+
+    showToast("Personal folder saved.");
+}
+
+
+/* =========================================================
+ADD PERSONAL REPLY
+========================================================= */
+
+function openAddReplyModal(){
+
+    hideAddMenu();
+
+    document.getElementById("replyTitle").value="";
+    document.getElementById("replyContent").value="";
+
+    populateFolderSelect();
+
+    openModal("addReplyModal");
+}
+
+function savePersonalReply(){
+
+    const title=document.getElementById(
+        "replyTitle"
+    ).value.trim();
+
+    const content=document.getElementById(
+        "replyContent"
+    ).value.trim();
+
+    const folderId=document.getElementById(
+        "replyFolder"
+    ).value;
+
+    if(!title||!content){
+
+        showToast(
+            "Please complete the reply title and content."
+        );
+
+        return;
+    }
+
+    const data=getPersonalData();
+
+    data.replies.push({
+
+        id:makeId("reply"),
+        title:title,
+        content:content,
+        folderId:folderId||""
+
+    });
+
+    setPersonalData(data);
+
+    closeModal("addReplyModal");
+
+    renderPersonalData();
+
+    showToast("Personal reply saved.");
+}
+
+
+/* =========================================================
+PERSONAL CONTEXT
+========================================================= */
+
+function openPersonalContextMenu(event){
+
+    const menu=document.getElementById(
+        "personalContextMenu"
+    );
+
+    if(!menu)return;
+
+    menu.style.display="block";
+
+    menu.style.left=event.clientX+"px";
+    menu.style.top=event.clientY+"px";
+}
+
+function hidePersonalContextMenu(){
+
+    const menu=document.getElementById(
+        "personalContextMenu"
+    );
+
+    if(menu)menu.style.display="none";
+}
+
+
+/* =========================================================
+EDIT PERSONAL REPLY
+========================================================= */
+
+function editSelectedPersonal(){
+
+    hidePersonalContextMenu();
+
+    if(
+        !selectedPersonal||
+        selectedPersonal.type!=="reply"
+    ){
+
+        showToast("Select a personal reply first.");
+
+        return;
+    }
+
+    editPersonalReply(selectedPersonal.id);
+}
+
+function editPersonalReply(id){
+
+    const data=getPersonalData();
+
+    const reply=data.replies.find(
+        item=>item.id===id
+    );
+
+    if(!reply)return;
+
+    editingReplyId=reply.id;
+
+    document.getElementById(
+        "editReplyTitle"
+    ).value=reply.title;
+
+    document.getElementById(
+        "editReplyContent"
+    ).value=reply.content;
+
+    openModal("editReplyModal");
+}
+
+function updatePersonalReply(){
+
+    if(!editingReplyId)return;
+
+    const title=document.getElementById(
+        "editReplyTitle"
+    ).value.trim();
+
+    const content=document.getElementById(
+        "editReplyContent"
+    ).value.trim();
+
+    if(!title||!content){
+
+        showToast("Please complete the fields.");
+
+        return;
+    }
+
+    const data=getPersonalData();
+
+    const reply=data.replies.find(
+        item=>item.id===editingReplyId
+    );
+
+    if(!reply)return;
+
+    reply.title=title;
+    reply.content=content;
+
+    setPersonalData(data);
+
+    editingReplyId=null;
+
+    closeModal("editReplyModal");
+
+    renderPersonalData();
+
+    showToast("Reply updated.");
+}
+
+
+/* =========================================================
+DELETE PERSONAL REPLY
+========================================================= */
+
+function deleteSelectedPersonal(){
+
+    hidePersonalContextMenu();
+
+    if(
+        !selectedPersonal||
+        selectedPersonal.type!=="reply"
+    ){
+
+        showToast("Select a personal reply first.");
+
+        return;
+    }
+
+    const data=getPersonalData();
+
+    data.replies=data.replies.filter(
+        reply=>reply.id!==selectedPersonal.id
+    );
+
+    setPersonalData(data);
+
+    selectedPersonal=null;
+
+    renderPersonalData();
+
+    showToast("Reply deleted.");
+}
+
+
+/* =========================================================
+EDIT PERSONAL FOLDER
+========================================================= */
+
+function editPersonalFolder(id){
+
+    editingFolderId=id;
+
+    const data=getPersonalData();
+
+    const folder=data.folders.find(
+        item=>item.id===id
+    );
+
+    if(!folder)return;
+
+    document.getElementById(
+        "editFolderName"
+    ).value=folder.name;
+
+    openModal("editFolderModal");
+}
+
+function updatePersonalFolder(){
+
+    if(!editingFolderId)return;
+
+    const name=document.getElementById(
+        "editFolderName"
+    ).value.trim();
+
+    if(!name){
+
+        showToast("Please enter a folder name.");
+
+        return;
+    }
+
+    const data=getPersonalData();
+
+    const folder=data.folders.find(
+        item=>item.id===editingFolderId
+    );
+
+    if(!folder)return;
+
+    folder.name=name;
+
+    setPersonalData(data);
+
+    editingFolderId=null;
+
+    closeModal("editFolderModal");
+
+    renderPersonalData();
+
+    showToast("Folder updated.");
+}
+
+
+/* =========================================================
+DELETE PERSONAL FOLDER
+========================================================= */
+
+function askDeletePersonalFolder(id){
+
+    pendingDeleteFolderId=id;
+
+    openModal("deleteFolderModal");
+}
+
+function confirmDeletePersonalFolder(){
+
+    if(!pendingDeleteFolderId){
+
+        closeModal("deleteFolderModal");
+
+        return;
+    }
+
+    const data=getPersonalData();
+
+    data.folders=data.folders.filter(
+        folder=>folder.id!==pendingDeleteFolderId
+    );
+
+    data.replies=data.replies.map(reply=>{
+
+        if(reply.folderId===pendingDeleteFolderId){
+
+            return{
+                ...reply,
+                folderId:""
+            };
+        }
+
+        return reply;
+    });
+
+    setPersonalData(data);
+
+    pendingDeleteFolderId=null;
+
+    closeModal("deleteFolderModal");
+
+    renderPersonalData();
+
+    showToast(
+        "Folder deleted. Its replies were moved to General."
+    );
+}
+
+
+/* =========================================================
+MODALS
+========================================================= */
+
+function openModal(id){
+
+    const modal=document.getElementById(id);
+
+    if(modal)modal.classList.add("show");
+}
+
+function closeModal(id){
+
+    const modal=document.getElementById(id);
+
+    if(modal)modal.classList.remove("show");
+}
+
+
+/* =========================================================
+TOAST
+========================================================= */
+
+function showToast(message){
+
+    const old=document.querySelector(".toast");
+
+    if(old)old.remove();
+
+    const toast=document.createElement("div");
+
+    toast.className="toast";
+
+    toast.textContent=message;
+
+    document.body.appendChild(toast);
+
+    setTimeout(()=>{
+        if(toast.parentNode)toast.remove();
+    },2500);
+}
+
+
+/* =========================================================
+SAVED REPLIES SLIDE
+========================================================= */
+
+function toggleScripts(){
+
+    const panel=document.getElementById(
+        "scriptPanel"
+    );
+
+    if(panel){
+
+        panel.classList.toggle("closed");
+
+    }
+}
+
+
+/* =========================================================
+TOTAL CHAT
+========================================================= */
+
+function updateTotalChat(){
+
+    const total=document.getElementById(
+        "totalVisitors"
+    );
+
+    if(total){
+
+        total.textContent=
+            getEndedConversations().length;
+    }
+
+    const online=document.getElementById(
+        "onlineVisitors"
+    );
+
+    if(online){
+
+        online.textContent="Offline";
+    }
+}
+
+
+/* =========================================================
+PROFILE
+========================================================= */
+
+function openProfileSettings(){
+
+    openSettings();
+
+    const input=document.getElementById(
+        "profileInput"
+    );
+
+    if(input){
+        input.value="";
+    }
+}
+
+function saveProfilePicture(event){
+
+    const file=event.target.files?.[0];
+
+    if(!file)return;
+
+    if(!file.type.startsWith("image/")){
+
+        showToast("Please select an image.");
+
+        return;
+    }
+
+    const reader=new FileReader();
+
+    reader.onload=function(){
+
+        const dataUrl=reader.result;
+
+        localStorage.setItem(
+            STORAGE.profile,
+            dataUrl
+        );
+
+        applyProfilePicture(dataUrl);
+
+        showToast("Profile picture saved.");
+    };
+
+    reader.readAsDataURL(file);
+}
+
+function applyProfilePicture(dataUrl){
+
+    const circle=document.getElementById(
+        "profileCircle"
+    );
+
+    const preview=document.getElementById(
+        "profilePreview"
+    );
+
+    if(dataUrl){
+
+        if(circle){
+
+            circle.innerHTML=
+                `<img src="${dataUrl}" alt="Profile">`;
+        }
+
+        if(preview){
+
+            preview.src=dataUrl;
+        }
+
+    }else{
+
+        if(circle){
+
+            circle.innerHTML="G";
+        }
+
+        if(preview){
+
+            preview.removeAttribute("src");
+        }
+    }
+}
+
+
+/* =========================================================
+THEME
+========================================================= */
+
+function setTheme(theme){
+
+    document.body.classList.remove(
+        "dark",
+        "cyan",
+        "facebook"
+    );
+
+    if(theme==="dark"){
+
+        document.body.classList.add("dark");
+
+    }else if(theme==="cyan"){
+
+        document.body.classList.add("cyan");
+
+    }else if(theme==="facebook"){
+
+        document.body.classList.add("facebook");
+
+    }else if(theme==="automatic"){
+
+        const prefersDark=
+            window.matchMedia &&
+            window.matchMedia(
+                "(prefers-color-scheme: dark)"
+            ).matches;
+
+        if(prefersDark){
+
+            document.body.classList.add("dark");
+        }
+    }
+
+    localStorage.setItem(
+        STORAGE.theme,
+        theme
+    );
+}
+
+function loadTheme(){
+
+    const theme=
+        localStorage.getItem(
+            STORAGE.theme
+        )||"original";
+
+    setTheme(theme);
+}
+
+
+/* =========================================================
+SETTINGS
+========================================================= */
+
+function openSettings(){
+
+    const profile=
+        localStorage.getItem(
+            STORAGE.profile
+        );
+
+    applyProfilePicture(profile);
+
+    openModal("settingsModal");
+}
+
+
+/* =========================================================
+OUTSIDE CLICK
+========================================================= */
+
+document.addEventListener("click",function(event){
+
+    const addMenu=document.getElementById(
+        "addMenu"
+    );
+
+    const contextMenu=document.getElementById(
+        "personalContextMenu"
+    );
+
+    if(
+        addMenu&&
+        !addMenu.contains(event.target)&&
+        !event.target.closest(
+            ".category-title-text"
+        )&&
+        !event.target.closest(
+            ".add-btn"
+        )
+    ){
+
+        addMenu.style.display="none";
+    }
+
+    if(
+        contextMenu&&
+        !contextMenu.contains(event.target)&&
+        !event.target.closest(
+            ".personal-reply"
+        )
+    ){
+
+        contextMenu.style.display="none";
+    }
+
+});
+
+
+/* =========================================================
+ESC / MODAL CLICK
+========================================================= */
+
+document.addEventListener("keydown",function(event){
+
+    if(event.key==="Escape"){
+
+        document.querySelectorAll(
+            ".modal-overlay.show"
+        ).forEach(modal=>{
+            modal.classList.remove("show");
+        });
+
+        hideAddMenu();
+        hidePersonalContextMenu();
+    }
+});
+
+document.querySelectorAll(".modal-overlay")
+    .forEach(modal=>{
+
+        modal.addEventListener("click",function(event){
+
+            if(event.target===modal){
+
+                modal.classList.remove("show");
+            }
+        });
+
+    });
+
+
+/* =========================================================
+ENDED DOUBLE CLICK SUMMARY
+========================================================= */
+
+document.getElementById("endedTab")
+    .addEventListener(
+        "dblclick",
+        summarizeAllEnded
+    );
+
+document.getElementById("endedTab")
+    .title=
+        "Click to view Ended. Double-click to summarize all Ended conversations.";
+
+
+/* =========================================================
+INITIALIZE
+========================================================= */
+
+function initializeApp(){
+
+    loadTheme();
+
+    const profile=
+        localStorage.getItem(
+            STORAGE.profile
+        );
+
+    applyProfilePicture(profile);
+
+    renderCurrentConversation();
+
+    renderChatList();
+
+    renderPersonalData();
+
+    updateTabs();
+
+    updateTotalChat();
+
+    searchScripts();
+}
+
+initializeApp();
+
+</script>
+
+</body>
+</html>
